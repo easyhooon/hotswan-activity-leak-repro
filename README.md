@@ -58,4 +58,5 @@ In the source application, LeakCanary stopped reporting the destroyed Activity a
 
 - `debugOnly` is explicitly enabled, so release variants do not contain HotSwan.
 - LeakCanary automatically watches destroyed Activities in debug builds.
+- `android.permission.INTERNET` is required because HotSwan opens its local development server on `127.0.0.1`.
 - A full heap dump may contain application data. Share the text leak trace first.

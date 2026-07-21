@@ -3,6 +3,7 @@ package dev.hotswan.leakrepro
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.activity.viewModels
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
@@ -11,27 +12,38 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.remember
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import kotlinx.coroutines.flow.MutableSharedFlow
+import dev.zacsweers.metrox.viewmodel.LocalMetroViewModelFactory
+import dev.zacsweers.metrox.viewmodel.metroViewModel
 
 class LeakingActivity : ComponentActivity() {
+    private val graphViewModel: ReproActivityRetainedGraphViewModel by viewModels {
+        ReproActivityRetainedGraphViewModel.Factory(
+            (application as ReproApplication).appGraph,
+        )
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
         setContent {
             MaterialTheme {
-                val events = remember { MutableSharedFlow<Unit>(extraBufferCapacity = 1) }
-                YeoBeeToastProvider {
-                    val toast = LocalYeoBeeToast.current
-                    ObserveAsEvents(flow = events) {
-                        toast.showToast()
-                        this@LeakingActivity.finish()
-                    }
+                CompositionLocalProvider(
+                    LocalMetroViewModelFactory provides graphViewModel.graph.metroViewModelFactory,
+                ) {
+                    YeoBeeToastProvider {
+                        val viewModel: ReproViewModel = metroViewModel()
+                        val toast = LocalYeoBeeToast.current
+                        ObserveAsEvents(flow = viewModel.finishEvent) {
+                            toast.showToast()
+                            this@LeakingActivity.finish()
+                        }
 
-                    LeakScreen(onClose = { events.tryEmit(Unit) })
+                        LeakScreen(onClose = viewModel::finishActivity)
+                    }
                 }
             }
         }

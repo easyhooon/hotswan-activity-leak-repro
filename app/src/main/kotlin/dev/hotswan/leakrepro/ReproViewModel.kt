@@ -11,10 +11,19 @@ import kotlinx.coroutines.flow.asSharedFlow
 @ContributesIntoMap(ActivityRetainedScope::class)
 @Inject
 class ReproViewModel : ViewModel() {
-    private val _finishEvent = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
-    val finishEvent = _finishEvent.asSharedFlow()
+    private val _event = MutableSharedFlow<ReproEvent>(extraBufferCapacity = 1)
+    val event = _event.asSharedFlow()
+
+    fun showToast() {
+        _event.tryEmit(ReproEvent.ShowToast)
+    }
 
     fun finishActivity() {
-        _finishEvent.tryEmit(Unit)
+        _event.tryEmit(ReproEvent.FinishActivity)
     }
+}
+
+sealed interface ReproEvent {
+    data object ShowToast : ReproEvent
+    data object FinishActivity : ReproEvent
 }

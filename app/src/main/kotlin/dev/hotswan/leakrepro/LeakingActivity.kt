@@ -37,12 +37,17 @@ class LeakingActivity : ComponentActivity() {
                     YeoBeeToastProvider {
                         val viewModel: ReproViewModel = metroViewModel()
                         val toast = LocalYeoBeeToast.current
-                        ObserveAsEvents(flow = viewModel.finishEvent) {
-                            toast.showToast()
-                            this@LeakingActivity.finish()
+                        ObserveAsEvents(flow = viewModel.event) { event ->
+                            when (event) {
+                                ReproEvent.ShowToast -> toast.showToast()
+                                ReproEvent.FinishActivity -> this@LeakingActivity.finish()
+                            }
                         }
 
-                        LeakScreen(onClose = viewModel::finishActivity)
+                        LeakScreen(
+                            onShowToast = viewModel::showToast,
+                            onFinish = viewModel::finishActivity,
+                        )
                     }
                 }
             }
@@ -50,7 +55,10 @@ class LeakingActivity : ComponentActivity() {
     }
 }
 @Composable
-private fun LeakScreen(onClose: () -> Unit) {
+private fun LeakScreen(
+    onShowToast: () -> Unit,
+    onFinish: () -> Unit,
+) {
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -58,10 +66,16 @@ private fun LeakScreen(onClose: () -> Unit) {
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        Text("The flow callback shows a custom toast and finishes this Activity.")
+        Text("The flow callback shows a custom toast, then the Activity can finish separately.")
         Button(
             modifier = Modifier.padding(top = 16.dp),
-            onClick = onClose,
+            onClick = onShowToast,
+        ) {
+            Text("Show Toast")
+        }
+        Button(
+            modifier = Modifier.padding(top = 16.dp),
+            onClick = onFinish,
         ) {
             Text("Finish Activity")
         }
